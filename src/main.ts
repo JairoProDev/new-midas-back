@@ -14,6 +14,11 @@ async function bootstrap() {
   );
 
   const configService = app.get(ConfigService);
+  const jwtSecret = configService.get<string>('JWT_SECRET');
+
+  if (!jwtSecret) {
+    throw new Error('JWT_SECRET is not defined');
+  }
 
   // Enable CORS
   await app.register(fastifyCors, {
@@ -23,7 +28,7 @@ async function bootstrap() {
 
   // Enable secure sessions
   await app.register(secureSession, {
-    secret: configService.get('JWT_SECRET'),
+    secret: Buffer.from(jwtSecret, 'utf-8'),
     salt: 'mq9hDxBVDbspDR6n',
     cookieName: 'sessionId',
     cookie: {
