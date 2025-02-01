@@ -4,28 +4,19 @@ import * as nodemailer from 'nodemailer';
 
 @Injectable()
 export class MailService {
-  private transporter: nodemailer.Transporter | null = null;
+  private transporter: nodemailer.Transporter;
   private readonly logger = new Logger(MailService.name);
 
   constructor(private configService: ConfigService) {
-    const smtpHost = this.configService.get<string>('SMTP_HOST');
-    const smtpUser = this.configService.get<string>('SMTP_USER');
-    const smtpPass = this.configService.get<string>('SMTP_PASS');
-    const smtpPort = this.configService.get<number>('SMTP_PORT') || 587;
-
-    if (smtpHost && smtpUser && smtpPass) {
-      this.transporter = nodemailer.createTransport({
-        host: smtpHost,
-        port: smtpPort,
-        secure: false,
-        auth: {
-          user: smtpUser,
-          pass: smtpPass,
-        },
-      });
-    } else {
-      this.logger.warn('SMTP credentials not provided. Email functionality will be disabled.');
-    }
+    this.transporter = nodemailer.createTransport({
+      host: this.configService.get('SMTP_HOST'),
+      port: this.configService.get('SMTP_PORT'),
+      secure: this.configService.get('SMTP_SECURE') === 'true',
+      auth: {
+        user: this.configService.get('SMTP_USER'),
+        pass: this.configService.get('SMTP_PASS'),
+      },
+    });
   }
 
   async sendVerificationEmail(email: string, token: string) {
@@ -80,6 +71,25 @@ export class MailService {
       this.logger.log(`Password reset email sent to ${email}`);
     } catch (error) {
       this.logger.error(`Failed to send password reset email to ${email}:`, error);
+      throw error;
+    }
+  }
+
+  async sendMail(options: {
+    to: string;
+    subject: string;
+    text: string;
+    html?: string;
+  }) {
+    const mailOptions = {
+      from: this.configService.get('SMTP_FROM'),
+      ...options,
+    };
+
+    try {
+      await this.transporter.sendMail(mailOptions);
+    } catch (error) {
+      console.error('Failed to send email:', error);
       throw error;
     }
   }

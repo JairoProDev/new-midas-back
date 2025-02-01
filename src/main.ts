@@ -15,9 +15,14 @@ async function bootstrap() {
 
   const configService = app.get(ConfigService);
   const jwtSecret = configService.get<string>('JWT_SECRET');
+  const sessionSecret = configService.get<string>('SESSION_SECRET');
 
   if (!jwtSecret) {
     throw new Error('JWT_SECRET is not defined');
+  }
+
+  if (!sessionSecret) {
+    throw new Error('SESSION_SECRET is not defined');
   }
 
   // Enable CORS
@@ -28,14 +33,14 @@ async function bootstrap() {
 
   // Enable secure sessions
   await app.register(secureSession, {
-    secret: Buffer.from(jwtSecret, 'utf-8'),
+    secret: Buffer.from(sessionSecret, 'base64'), // Ajuste aquí para asegurar que se use 'base64'
     salt: 'mq9hDxBVDbspDR6n',
     cookieName: 'sessionId',
     cookie: {
       path: '/',
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 días
     },
   });
 
@@ -59,7 +64,7 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
 
-  const port = configService.get('PORT', 3002);
+  const port = configService.get('PORT', 3001);
   await app.listen(port, '0.0.0.0');
   console.log(`Application is running on: ${await app.getUrl()}`);
 }

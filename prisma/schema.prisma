@@ -13,12 +13,33 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserRole {
+  EMPLOYEE
+  ADMIN
+}
+
+enum ReimbursementStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ExpenseCategory {
+  TRAVEL
+  MEALS
+  OFFICE_SUPPLIES
+  EQUIPMENT
+  OTHER
+}
+
 model User {
   id                    String    @id @default(cuid())
   email                 String    @unique
   password              String
   firstName             String?
   lastName              String?
+  role                  UserRole  @default(EMPLOYEE)
+  company               String?
   isEmailVerified       Boolean   @default(false)
   verificationToken     String?   @unique
   verificationTokenExpiry DateTime?
@@ -26,4 +47,23 @@ model User {
   resetPasswordExpiry   DateTime?
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
+  submittedRequests     ReimbursementRequest[] @relation("SubmittedRequests")
+  approvedRequests      ReimbursementRequest[] @relation("ApprovedRequests")
+}
+
+model ReimbursementRequest {
+  id              String              @id @default(cuid())
+  amount          Float
+  category        ExpenseCategory
+  description     String
+  receiptUrl      String
+  status          ReimbursementStatus @default(PENDING)
+  feedback        String?
+  submittedAt     DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  submittedBy     User               @relation("SubmittedRequests", fields: [submittedById], references: [id])
+  submittedById   String
+  approvedBy      User?              @relation("ApprovedRequests", fields: [approvedById], references: [id])
+  approvedById    String?
+  approvedAt      DateTime?
 }
