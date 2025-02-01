@@ -4,19 +4,19 @@ import * as nodemailer from 'nodemailer';
 
 @Injectable()
 export class MailService {
-  private transporter: nodemailer.Transporter;
+  private transporter: nodemailer.Transporter | null = null;
   private readonly logger = new Logger(MailService.name);
 
   constructor(private configService: ConfigService) {
-    // Create transporter only if SMTP credentials are provided
-    const smtpHost = this.configService.get('SMTP_HOST');
-    const smtpUser = this.configService.get('SMTP_USER');
-    const smtpPass = this.configService.get('SMTP_PASS');
+    const smtpHost = this.configService.get<string>('SMTP_HOST');
+    const smtpUser = this.configService.get<string>('SMTP_USER');
+    const smtpPass = this.configService.get<string>('SMTP_PASS');
+    const smtpPort = this.configService.get<number>('SMTP_PORT') || 587;
 
     if (smtpHost && smtpUser && smtpPass) {
       this.transporter = nodemailer.createTransport({
         host: smtpHost,
-        port: this.configService.get('SMTP_PORT'),
+        port: smtpPort,
         secure: false,
         auth: {
           user: smtpUser,
@@ -34,11 +34,11 @@ export class MailService {
       return;
     }
 
-    const verificationUrl = `${this.configService.get('FRONTEND_URL')}/verify-email?token=${token}`;
+    const verificationUrl = `${this.configService.get<string>('FRONTEND_URL')}/verify-email?token=${token}`;
 
     try {
       await this.transporter.sendMail({
-        from: this.configService.get('SMTP_USER'),
+        from: this.configService.get<string>('SMTP_USER'),
         to: email,
         subject: 'Verify your email address',
         html: `
@@ -62,11 +62,11 @@ export class MailService {
       return;
     }
 
-    const resetUrl = `${this.configService.get('FRONTEND_URL')}/reset-password?token=${token}`;
+    const resetUrl = `${this.configService.get<string>('FRONTEND_URL')}/reset-password?token=${token}`;
 
     try {
       await this.transporter.sendMail({
-        from: this.configService.get('SMTP_USER'),
+        from: this.configService.get<string>('SMTP_USER'),
         to: email,
         subject: 'Reset your password',
         html: `
@@ -83,4 +83,4 @@ export class MailService {
       throw error;
     }
   }
-} 
+}
